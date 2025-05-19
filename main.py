@@ -101,52 +101,51 @@ async def update_effectif():
             personnel_role = channel.guild.get_role(1158798630254280855)
             personnel_count = len(personnel_role.members) if personnel_role else 0
             message += f"** Total de <@&{personnel_role.id}> : {personnel_count}**\n"
+         # Commandes supplémentaires pour tester
 
-            # Commandes supplémentaires pour tester
+@bot.command()
+async def ping(ctx):
+    await ctx.send("Ne vous inquiétez-vous donc pas cher maître, je suis là.")
 
-            @bot.command()
-            async def ping(ctx):
-                await ctx.send("Ne vous inquiétez-vous donc pas cher maître, je suis là.")
+@bot.command()
+async def earl(ctx):
+    await ctx.send("C'est un spécimen unique en son genre, maigre, boutonneux et binoclard. Il ne ferait même pas mal à une mouche.")
 
-            @bot.command()
-            async def earl(ctx):
-                await ctx.send("C'est un spécimen unique en son genre, maigre, boutonneux et binoclard. Il ne ferait même pas mal à une mouche.")
+@bot.command()
+async def hawk(ctx):
+    await ctx.send("Ce type vit dans le passé, il se prend pour un cowboy alors que c'est un femboy.")
 
-            @bot.command()
-            async def hawk(ctx):
-                await ctx.send("Ce type vit dans le passé, il se prend pour un cowboy alors que c'est un femboy.")
+@bot.command()
+async def edouard(ctx):
+    await ctx.send("C'est l'homme le plus gros que j'ai connu. Un virage, un accident. Il a beau être gros même le Dodge Ram le subit ! ")
 
-            @bot.command()
-            async def edouard(ctx):
-                await ctx.send("C'est l'homme le plus gros que j'ai connu. Un virage, un accident. Il a beau être gros même le Dodge Ram le subit ! ")
+@bot.command()
+async def gunter(ctx):
+    await ctx.send("Il aime que les trombonnes soient à leur place. Recalé par l'école d'art, il commence sa carrière politique. «Nein! Nein! Nein!git status» a-t-il dit.")
 
-            @bot.command()
-            async def gunter(ctx):
-                await ctx.send("Il aime que les trombonnes soient à leur place. Recalé par l'école d'art, il commence sa carrière politique. «Nein! Nein! Nein!git status» a-t-il dit.")
+@bot.command()
+async def joe(ctx):
+    await ctx.send("Souvent confondu avec un camionneur, ce commissaire de police est redouté pour les BL qui partent vite.")
 
-            @bot.command()
-            async def joe(ctx):
-                await ctx.send("Souvent confondu avec un camionneur, ce commissaire de police est redouté pour les BL qui partent vite.")
+@bot.command()
+async def micheal(ctx):
+    await ctx.send("Amateur professionnel de jeunes asiatiques, il les dévore comme du popcorn. Pop!")
 
-            @bot.command()
-            async def micheal(ctx):
-                await ctx.send("Amateur professionnel de jeunes asiatiques, il les dévore comme du popcorn. Pop!")
+@bot.command()
+async def angus(ctx):
+    await ctx.send("Cet homme est un multi-aliment, il a le nom d'une race bovine écossaise, et peut-être aussi un jus de fruit. Bon appétit!")
 
-            @bot.command()
-            async def angus(ctx):
-                await ctx.send("Cet homme est un multi-aliment, il a le nom d'une race bovine écossaise, et peut-être aussi un jus de fruit. Bon appétit!")
+@bot.command()
+async def vlad(ctx):
+    await ctx.send("Cet homme, féru de frites, aime bien dénigrer la France, parce que pourquoi pas, et si tu oses le contredire, il te sortira un (olala).")
 
-            @bot.command()
-            async def vlad(ctx):
-                await ctx.send("Cet homme, féru de frites, aime bien dénigrer la France, parce que pourquoi pas, et si tu oses le contredire, il te sortira un (olala).")
+@bot.command()
+async def thomas(ctx):
+    await ctx.send("Lui c'est juste une salope qui se fait ban H24, mais il détruit tout le monde sur les points, donc en vrai pas grave, on l'excuse.") 
 
-            @bot.command()
-            async def thomas(ctx):
-                await ctx.send("Lui c'est juste une salope qui se fait ban H24, mais il détruit tout le monde sur les points, donc en vrai pas grave, on l'excuse.") 
-
-            @bot.command()
-            async def tony(ctx):
-                await ctx.send("Attention! Si votre véhicule est coincé ne l'appelé pas, il va vite perdre patience et tout faire péter!") 
+@bot.command()
+async def tony(ctx):
+    await ctx.send("Attention! Si votre véhicule est coincé ne l'appelé pas, il va vite perdre patience et tout faire péter!") 
 
             message_dodgeram = [
                 "Pas de bol ! Tu as fait un carkill massif et Gustavo était dans les parages...",
@@ -178,7 +177,7 @@ async def update_effectif():
         except Exception as e:
             print(f"Erreur : {e}")
 
-        await asyncio.sleep(1)  # toutes les secondes
+        await asyncio.sleep(60)  # toutes les secondes
 
 token = os.getenv("DISCORD_TOKEN")
 keep_alive()
