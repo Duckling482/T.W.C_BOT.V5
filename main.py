@@ -100,7 +100,7 @@ async def update_effectif():
        
             personnel_role = channel.guild.get_role(1158798630254280855)
             personnel_count = len(personnel_role.members) if personnel_role else 0
-            message += f"** Totale de <@&{personnel_role.id}> : {personnel_count}**\n"
+            message += f"** Total de <@&{personnel_role.id}> : {personnel_count}**\n"
 
             # Commandes supplémentaires pour tester
 
