@@ -105,18 +105,24 @@ async def update_effectif():
 
 
 
-            # Envoi ou mise à jour
+           # Vérifier si un message existe déjà dans le salon
             async for msg in channel.history(limit=1):
-                if msg.author == bot.user:
-                    await msg.edit(content=message)
+                if msg.author == bot.user:  # Vérifier si c'est un message du bot
+                    await msg.edit(content=message)  # Mettre à jour le message
+                    print("Message mis à jour.")
                     break
             else:
+                # Si aucun message du bot n'existe, en créer un nouveau
                 await channel.send(message)
+                print("Nouveau message envoyé.")
 
         except Exception as e:
-            print(f"Erreur : {e}")
+            print(f"Erreur lors de la mise à jour du message : {str(e)}")
 
-        await asyncio.sleep(60)  # toutes les secondes
+        # Attendre 60 secondes avant la prochaine mise à jour
+        await asyncio.sleep(60)
+
+
 
 token = os.getenv("DISCORD_TOKEN")
 keep_alive()
