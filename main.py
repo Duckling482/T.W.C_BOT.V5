@@ -122,7 +122,7 @@ async def update_effectif():
         # Attendre 60 secondes avant la prochaine mise à jour
         await asyncio.sleep(60)
 
- Commandes supplémentaires pour tester
+ ## Commandes supplémentaires pour tester
 
 @bot.command()
 async def ping(ctx):
