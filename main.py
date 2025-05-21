@@ -18,6 +18,19 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 CHANNEL_ID = 1216781760155881613  # ID du salon
 
+@bot.command()
+async def bonjour(ctx):
+    await ctx.send(f"Bonjour {ctx.author.mention} !")
+
+CHANNEL_ID = 1216781760155881613  # ID du salon
+
+# Configuration complète des intents
+intents = discord.Intents.default()
+intents.members = True
+intents.message_content = True
+intents.guilds = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
 CHANNEL_ID = 1216781760155881613  # Remplace par l'ID de ton salon
 
 # Départements (mentionnables)
@@ -126,15 +139,73 @@ async def update_effectif():
         # Attendre 60 secondes avant la prochaine mise à jour
         await asyncio.sleep(60)
 
-CHANNEL_ID = 1216781760155881613  # ID du salon
+# Commandes supplémentaires pour tester
 
-# Configuration complète des intents
-intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
-intents.guilds = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+@bot.command()
+async def ping(ctx):
+    await ctx.send("Ne vous inquiétez-vous donc pas cher maître, je suis là.")
 
+@bot.command()
+async def earl(ctx):
+    await ctx.send("C'est un spécimen unique en son genre, maigre, boutonneux et binoclard. Il ne ferait même pas mal à une mouche.")
+
+@bot.command()
+async def hawk(ctx):
+    await ctx.send("Ce type vit dans le passé, il se prend pour un cowboy alors que c'est un femboy.")
+
+@bot.command()
+async def edouard(ctx):
+    await ctx.send("C'est l'homme le plus gros que j'ai connu. Un virage, un accident. Il a beau être gros même le Dodge Ram le subit ! ")
+
+@bot.command()
+async def gunter(ctx):
+    await ctx.send("Il aime que les trombonnes soient à leur place. Recalé par l'école d'art, il commence sa carrière politique. «Nein! Nein! Nein!git status» a-t-il dit.")
+
+@bot.command()
+async def joe(ctx):
+    await ctx.send("Souvent confondu avec un camionneur, ce commissaire de police est redouté pour les BL qui partent vite.")
+
+@bot.command()
+async def micheal(ctx):
+    await ctx.send("Amateur professionnel de jeunes asiatiques, il les dévore comme du popcorn. Pop!")
+
+@bot.command()
+async def angus(ctx):
+    await ctx.send("Cet homme est un multi-aliment, il a le nom d'une race bovine écossaise, et peut-être aussi un jus de fruit. Bon appétit!")
+
+@bot.command()
+async def vlad(ctx):
+    await ctx.send("Cet homme, féru de frites, aime bien dénigrer la France, parce que pourquoi pas, et si tu oses le contredire, il te sortira un (olala).")
+
+@bot.command()
+async def thomas(ctx):
+    await ctx.send("Lui c'est juste une salope qui se fait ban H24, mais il détruit tout le monde sur les points, donc en vrai pas grave, on l'excuse.") 
+
+@bot.command()
+async def tony(ctx):
+    await ctx.send("Attention! Si votre véhicule est coincé ne l'appelé pas, il va vite perdre patience et tout faire péter!") 
+
+message_dodgeram = [
+    "Pas de bol ! Tu as fait un carkill massif et Gustavo était dans les parages...",
+        "Tu as fait voler une voiture et Tyler a tout vu...",
+        "Tu roulais à 244km/h et par chance tu n'as tué personne !"
+]
+
+@bot.command()
+async def dodgeram(ctx):
+    await ctx.send(random.choice(message_dodgeram))
+
+@bot.command()
+async def roll(ctx):
+    await ctx.send(random.randint(1, 10))
+
+@bot.command()
+async def ntm(ctx):
+     await ctx.send(f"C'est une injure très vulgaire et malpolie. Je ne peux pas vous laisser sans punition {ctx.author.mention}.")
+
+@bot.command()
+async def pileouface(ctx):
+    await ctx.send(random.choice(["Pile", "Face"]))
 
 
 
@@ -143,5 +214,3 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 token = os.getenv('DISCORD_TOKEN')
 keep_alive()
 bot.run(token)
-
-
