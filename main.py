@@ -207,6 +207,10 @@ async def ntm(ctx):
 async def pileouface(ctx):
     await ctx.send(random.choice(["Pile", "Face"]))
 
+@bot.command()
+async def alex(ctx):
+    await ctx.send("Vous recherchez un aspirateur ? Parfait ! Le Alex Dupont ProMax aspire tout, même les liquides ! N'hésitez plus, commandez dès maintenant !")
+
 
 
 
