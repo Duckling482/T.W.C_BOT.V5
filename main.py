@@ -211,6 +211,10 @@ async def pileouface(ctx):
 async def alex(ctx):
     await ctx.send("Vous recherchez un aspirateur ? Parfait ! Le Alex Dupont ProMax aspire tout, même les liquides ! N'hésitez plus, commandez dès maintenant !")
 
+@bot.command()
+async def patrice(ctx):
+    await ctx.send("Mangeur d'orteils à temps partiel, buveur de pinard professionnel à plein temps.")
+
 
 
 
