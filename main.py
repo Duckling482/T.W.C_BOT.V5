@@ -52,7 +52,7 @@ EMPLOYE_JUNIOR = 1352013992347828296
 APPRENTI = 1352013998572306462
 STAGIAIRE = 1352013993539014726
 
-ABSENT = 1371559532378980352
+ ABSENT_ROLE_ID = 1371559532378980352  # ID du rôle "Absent"
 
 @bot.event
 async def on_ready():
@@ -78,32 +78,36 @@ async def update_effectif():
                         return role
                 return None
 
+           
+
             async def generer_bloc(guild, role_id, avec_departement=True):
-                    bloc = f"### <@&{role_id}>\n"  # Grand titre avec la mention du rôle
-                    role = guild.get_role(role_id)
-                    if not role:
-                        return f"Rôle introuvable : {role_id}\n"
-                    total = 0
-                    for member in role.members:
-                        ligne = f"- {member.mention}"
-                        if avec_departement:
-                            departement = get_departement(member)
-                            if departement:
-                                ligne += f" <@&{departement.id}>"
+                bloc = f"### <@&{role_id}>\n"  # Grand titre avec la mention du rôle
+                role = guild.get_role(role_id)
+                if not role:
+                    return f"Rôle introuvable : {role_id}\n"
+    
+                total = 0
+                for member in role.members:
+                    ligne = f"- {member.mention}"
+        
+                    if avec_departement:
+                        departement = get_departement(member)
+                        if departement:
+                            ligne += f" <@&{departement.id}>"
+        
+                    # Ajouter le rôle "Absent" s'il est présent
+                    absent_role = guild.get_role(ABSENT_ROLE_ID)
+                    if absent_role and absent_role in member.roles:
+                        ligne += f" <@&{ABSENT_ROLE_ID}>"
+        
+                    bloc += ligne + "\n"
+                    total += 1
 
-            ## Ajouter le rôle "Absent"
+                if total == 0:
+                    bloc += "N/A\n"
 
-                absent_role = guild.get_role(ABSENT)   
-                if absent_role and absent_role in member.roles:
-                    ligne += f" <@&{absent_role}>"
-
-
-                        bloc += ligne + "\n"
-                        total += 1
-                    if total == 0:
-                        bloc += "N/A\n"
-                    bloc += "━" * 75 + "\n"
-                    return bloc
+                bloc += "━" * 75 + "\n"
+                return bloc
 
 
             # Bloc Direction
