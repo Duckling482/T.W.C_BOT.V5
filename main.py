@@ -131,11 +131,9 @@ async def update_effectif():
             personnel_role = channel.guild.get_role(1158798630254280855)
             personnel_count = len(personnel_role.members) if personnel_role else 0
             message += f"** Total de <@&{personnel_role.id}> : {personnel_count}**\n"
-         # Commandes supplémentaires pour tester
-
-
-
+    
            # Vérifier si un message existe déjà dans le salon
+            
             async for msg in channel.history(limit=1):
                 if msg.author == bot.user:  # Vérifier si c'est un message du bot
                     await msg.edit(content=message)  # Mettre à jour le message
@@ -151,6 +149,92 @@ async def update_effectif():
 
         # Attendre 60 secondes avant la prochaine mise à jour
         await asyncio.sleep(60)
+# ----------------------------------------------------------- CASINO -------------------------------------------------------------
+
+# Stockage des parties en cours (clé : ID joueur)
+blackjack_parties = {}
+
+def tirer_carte():
+    cartes = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11]  # 10 = J/Q/K, 11 = As
+    return random.choice(cartes)
+
+def calculer_total(cartes):
+    total = sum(cartes)
+    as_count = cartes.count(11)
+    while total > 21 and as_count:
+        total -= 10  # Convertir un As de 11 à 1
+        as_count -= 1
+    return total
+
+@bot.command()
+async def blackjack(ctx):
+    joueur_id = ctx.author.id
+    carte1 = tirer_carte()
+    carte2 = tirer_carte()
+    joueur = [carte1, carte2]
+    croupier = [tirer_carte(), tirer_carte()]
+
+    blackjack_parties[joueur_id] = {
+        "joueur": joueur,
+        "croupier": croupier,
+        "fini": False
+    }
+
+    await ctx.send(f"🂠 Tu as tiré : {joueur} (Total : {calculer_total(joueur)})")
+    await ctx.send(f"🤵 Le croupier montre : [{croupier[0]}, ?]")
+    await ctx.send("Tape `!hit` pour une carte ou `!stand` pour t'arrêter.")
+
+@bot.command()
+async def hit(ctx):
+    joueur_id = ctx.author.id
+    partie = blackjack_parties.get(joueur_id)
+    if not partie or partie["fini"]:
+        await ctx.send("Tu n'as pas de partie en cours. Tape `!blackjack` pour commencer.")
+        return
+
+    carte = tirer_carte()
+    partie["joueur"].append(carte)
+    total = calculer_total(partie["joueur"])
+
+    await ctx.send(f"🃏 Nouvelle carte : {carte} → Tes cartes : {partie['joueur']} (Total : {total})")
+
+    if total > 21:
+        partie["fini"] = True
+        await ctx.send("💥 Tu dépasses 21 ! Tu perds.")
+    elif total == 21:
+        await ctx.send("🃏 21 ! Tape `!stand` pour voir ce que fait le croupier.")
+    else:
+        await ctx.send("Tape `!hit` pour une autre carte ou `!stand` pour t'arrêter.")
+
+@bot.command()
+async def stand(ctx):
+    joueur_id = ctx.author.id
+    partie = blackjack_parties.get(joueur_id)
+    if not partie or partie["fini"]:
+        await ctx.send("Tu n'as pas de partie en cours.")
+        return
+
+    partie["fini"] = True
+    joueur_total = calculer_total(partie["joueur"])
+    croupier = partie["croupier"]
+    croupier_total = calculer_total(croupier)
+
+    await ctx.send(f"🤵 Le croupier avait : {croupier} (Total : {croupier_total})")
+
+    # Le croupier tire tant qu'il a moins de 17
+    while croupier_total < 17:
+        nouvelle = tirer_carte()
+        croupier.append(nouvelle)
+        croupier_total = calculer_total(croupier)
+        await ctx.send(f"🤵 Le croupier tire : {nouvelle} → {croupier} (Total : {croupier_total})")
+
+    # Détermination du gagnant
+    if croupier_total > 21 or joueur_total > croupier_total:
+        await ctx.send("🎉 Tu gagnes !")
+    elif joueur_total == croupier_total:
+        await ctx.send("🤝 Égalité.")
+    else:
+        await ctx.send("💀 Le croupier gagne.")
 
 # Commandes supplémentaires pour tester
 
