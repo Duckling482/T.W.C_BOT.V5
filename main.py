@@ -16,10 +16,6 @@ from keep_alive import keep_alive
 load_dotenv()
 
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
 
 CHANNEL_ID = 1216781760155881613  # ID du salon
 
