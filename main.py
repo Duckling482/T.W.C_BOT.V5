@@ -52,6 +52,8 @@ EMPLOYE_JUNIOR = 1352013992347828296
 APPRENTI = 1352013998572306462
 STAGIAIRE = 1352013993539014726
 
+ABSCENT = 1371559532378980352
+
 @bot.event
 async def on_ready():
     print(f"Connecté en tant que {bot.user}")
@@ -88,6 +90,14 @@ async def update_effectif():
                             departement = get_departement(member)
                             if departement:
                                 ligne += f" <@&{departement.id}>"
+
+            ## Ajouter le rôle "Absent"
+
+                absent_role = guild.get_role(ABSENT)   
+                if absent_role and absent_role in member.roles:
+                    ligne += f" <@&{absent_role}>"
+
+
                         bloc += ligne + "\n"
                         total += 1
                     if total == 0:
