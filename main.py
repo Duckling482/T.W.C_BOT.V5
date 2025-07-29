@@ -1,3 +1,4 @@
+
 import os
 import asyncio
 import json
@@ -6,6 +7,9 @@ import random
 import discord
 from discord.ext import commands
 from keep_alive import keep_alive
+import sqlite3
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 from keep_alive import keep_alive
 
@@ -152,42 +156,52 @@ async def update_effectif():
         await asyncio.sleep(60)
 # ----------------------------------------------------------- CASINO -------------------------------------------------------------
 
-# ----- Chemin vers le fichier de sauvegarde -----
-FICHIER_JETONS = "jetons.json"
+bot = commands.Bot(command_prefix="!")
 
-# ----- Chargement ou création du fichier de jetons -----
-if os.path.exists(FICHIER_JETONS):
-    with open(FICHIER_JETONS, "r") as f:
-        jetons = json.load(f)
-else:
-    jetons = {}
+DB_PATH = "jetons.db"
+conn = sqlite3.connect(DB_PATH)
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS jetons (user_id INTEGER PRIMARY KEY, solde INTEGER DEFAULT 1000, last_bonus TEXT)''')
+conn.commit()
 
-# ----- Sauvegarde des jetons -----
-def sauvegarder_jetons():
-    with open(FICHIER_JETONS, "w") as f:
-        json.dump(jetons, f)
+blackjack_parties = {}
+mises = {}
 
-# ----- Cartes en emojis -----
-EMOJIS_CARTES = {
-    2: "2", 3: "3", 4: "4", 5: "5", 6: "6",
-    7: "7", 8: "8", 9: "9", 10: "🔟", 11: "🂡"
+def get_solde(user_id):
+    c.execute("SELECT solde FROM jetons WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row:
+        return row[0]
+    else:
+        c.execute("INSERT INTO jetons (user_id, solde, last_bonus) VALUES (?, ?, ?)", (user_id, 1000, datetime.utcnow().isoformat()))
+        conn.commit()
+        return 1000
+
+def update_solde(user_id, montant):
+    solde = get_solde(user_id) + montant
+    solde = max(0, solde)
+    c.execute("UPDATE jetons SET solde = ? WHERE user_id = ?", (solde, user_id))
+    conn.commit()
+
+def get_last_bonus(user_id):
+    c.execute("SELECT last_bonus FROM jetons WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row and row[0]:
+        return datetime.fromisoformat(row[0])
+    return None
+
+def set_last_bonus(user_id):
+    c.execute("UPDATE jetons SET last_bonus = ? WHERE user_id = ?", (datetime.utcnow().isoformat(), user_id))
+    conn.commit()
+
+card_emojis = {
+    2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣",
+    8: "8️⃣", 9: "9️⃣", 10: "🔟", 11: "🂡"
 }
 
-# ----- Parties de blackjack -----
-blackjack_parties = {}
-
-# ----- Initialisation des jetons -----
-def get_solde(user_id):
-    if str(user_id) not in jetons:
-        jetons[str(user_id)] = 1000
-        sauvegarder_jetons()
-    return jetons[str(user_id)]
-
-# ----- Tirage d'une carte -----
 def tirer_carte():
-    return random.choice([2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11])
+    return random.choice(list(card_emojis.keys()))
 
-# ----- Calcul du total -----
 def calculer_total(cartes):
     total = sum(cartes)
     as_count = cartes.count(11)
@@ -196,37 +210,15 @@ def calculer_total(cartes):
         as_count -= 1
     return total
 
-# ----- Affichage joli des cartes -----
 def afficher_cartes(cartes):
-    return " ".join(EMOJIS_CARTES.get(c, str(c)) for c in cartes)
+    return " ".join(card_emojis[carte] for carte in cartes)
 
-# ----- Commande !solde -----
-@bot.command()
-async def solde(ctx):
-    solde_actuel = get_solde(ctx.author.id)
-    await ctx.send(f"💰 Tu as **{solde_actuel}** jetons.")
-
-# ----- Commande !topjetons -----
-@bot.command()
-async def topjetons(ctx):
-    top = sorted(jetons.items(), key=lambda x: x[1], reverse=True)[:5]
-    msg = "📊 **Top 5 des riches**\n"
-    for i, (user_id, amount) in enumerate(top, 1):
-        user = await bot.fetch_user(int(user_id))
-        msg += f"{i}. {user.name} — {amount} jetons\n"
-    await ctx.send(msg)
-
-# ----- Commande !miser [montant] -----
 @bot.command()
 async def miser(ctx, montant: int):
-    joueur_id = str(ctx.author.id)
-
-    if montant <= 0:
-        await ctx.send("❌ Mise invalide.")
-        return
-
-    if get_solde(joueur_id) < montant:
-        await ctx.send("❌ Tu n'as pas assez de jetons.")
+    joueur_id = ctx.author.id
+    solde = get_solde(joueur_id)
+    if montant <= 0 or montant > solde:
+        await ctx.send("❌ Mise invalide ou solde insuffisant.")
         return
 
     carte1, carte2 = tirer_carte(), tirer_carte()
@@ -236,70 +228,114 @@ async def miser(ctx, montant: int):
     blackjack_parties[joueur_id] = {
         "joueur": joueur,
         "croupier": croupier,
-        "mise": montant,
         "fini": False
     }
+    mises[joueur_id] = montant
+    update_solde(joueur_id, -montant)
 
     await ctx.send(f"🃏 Tes cartes : {afficher_cartes(joueur)} (Total : **{calculer_total(joueur)}**)")
-    await ctx.send(f"🤵 Croupier montre : {EMOJIS_CARTES[croupier[0]]} ?")
+    await ctx.send(f"🤵 Croupier montre : {card_emojis[croupier[0]]} ❓")
     await ctx.send("Tape `!hit` pour piocher ou `!stand` pour rester.")
 
-# ----- Commande !hit -----
 @bot.command()
 async def hit(ctx):
-    joueur_id = str(ctx.author.id)
+    joueur_id = ctx.author.id
     partie = blackjack_parties.get(joueur_id)
-
     if not partie or partie["fini"]:
-        await ctx.send("❌ Aucune partie en cours. Tape `!miser montant`.")
+        await ctx.send("❌ Pas de partie en cours.")
         return
 
     carte = tirer_carte()
     partie["joueur"].append(carte)
     total = calculer_total(partie["joueur"])
-
-    await ctx.send(f"🃏 Tu tires : {EMOJIS_CARTES.get(carte, carte)} → {afficher_cartes(partie['joueur'])} (Total : **{total}**)")
+    await ctx.send(f"🃏 Tu as tiré : {card_emojis[carte]} → {afficher_cartes(partie['joueur'])} (Total : **{total}**)")
 
     if total > 21:
         partie["fini"] = True
-        jetons[joueur_id] -= partie["mise"]
-        sauvegarder_jetons()
-        await ctx.send(f"💥 Tu dépasses 21 ! Tu perds **{partie['mise']}** jetons.")
+        await ctx.send("💥 Tu dépasses 21, tu perds ta mise.")
+    elif total == 21:
+        await ctx.send("🎯 Tu as 21 ! Tape `!stand`.")
+    else:
+        await ctx.send("Tape `!hit` ou `!stand`.")
 
-# ----- Commande !stand -----
 @bot.command()
 async def stand(ctx):
-    joueur_id = str(ctx.author.id)
+    joueur_id = ctx.author.id
     partie = blackjack_parties.get(joueur_id)
-
     if not partie or partie["fini"]:
-        await ctx.send("❌ Aucune partie en cours.")
+        await ctx.send("❌ Pas de partie en cours.")
         return
 
     partie["fini"] = True
     joueur_total = calculer_total(partie["joueur"])
     croupier = partie["croupier"]
+    croupier_total = calculer_total(croupier)
 
-    await ctx.send(f"🤵 Le croupier a : {afficher_cartes(croupier)} (Total : **{calculer_total(croupier)}**)")
-
-    while calculer_total(croupier) < 17:
+    await ctx.send(f"🤵 Le croupier avait : {afficher_cartes(croupier)} (Total : **{croupier_total}**)")
+    while croupier_total < 17:
         carte = tirer_carte()
         croupier.append(carte)
-        await ctx.send(f"🤵 Le croupier tire : {EMOJIS_CARTES.get(carte, carte)} → {afficher_cartes(croupier)} (Total : **{calculer_total(croupier)}**)")
+        croupier_total = calculer_total(croupier)
+        await ctx.send(f"🤵 Il tire : {card_emojis[carte]} → {afficher_cartes(croupier)} (Total : **{croupier_total}**)")
 
-    croupier_total = calculer_total(croupier)
-    mise = partie["mise"]
-
+    mise = mises.pop(joueur_id, 0)
     if croupier_total > 21 or joueur_total > croupier_total:
-        jetons[joueur_id] += mise
-        await ctx.send(f"🎉 Tu gagnes **{mise}** jetons ! 💰 Nouveau solde : {jetons[joueur_id]}")
+        gain = mise * 2
+        update_solde(joueur_id, gain)
+        await ctx.send(f"🎉 Tu gagnes {gain} jetons !")
     elif joueur_total == croupier_total:
-        await ctx.send("🤝 Égalité. Tu récupères ta mise.")
+        update_solde(joueur_id, mise)
+        await ctx.send("🤝 Égalité, tu récupères ta mise.")
     else:
-        jetons[joueur_id] -= mise
-        await ctx.send(f"💀 Tu perds **{mise}** jetons. Nouveau solde : {jetons[joueur_id]}")
+        await ctx.send("💀 Le croupier gagne. Tu perds ta mise.")
 
-    sauvegarder_jetons()
+@bot.command()
+async def solde(ctx):
+    solde = get_solde(ctx.author.id)
+    await ctx.send(f"💰 Tu as {solde} jetons.")
+
+@bot.command()
+async def topjetons(ctx):
+    c.execute("SELECT user_id, solde FROM jetons ORDER BY solde DESC LIMIT 5")
+    rows = c.fetchall()
+    message = "🏆 Classement des riches :\n"
+    for i, (user_id, solde) in enumerate(rows, start=1):
+        user = await bot.fetch_user(user_id)
+        message += f"{i}. {user.name} : {solde} jetons\n"
+    await ctx.send(message)
+
+@bot.command()
+async def bonus(ctx):
+    user_id = ctx.author.id
+    dernier = get_last_bonus(user_id)
+    maintenant = datetime.utcnow()
+
+    if not dernier or maintenant - dernier > timedelta(hours=24):
+        set_last_bonus(user_id)
+        update_solde(user_id, 200)
+        await ctx.send("🎁 Bonus quotidien : +200 jetons !")
+    else:
+        restant = timedelta(hours=24) - (maintenant - dernier)
+        await ctx.send(f"🕒 Reviens dans {restant.seconds // 3600}h{(restant.seconds // 60) % 60}m pour un nouveau bonus.")
+
+@bot.command()
+async def donner(ctx, membre: discord.Member, montant: int):
+    auteur_id = ctx.author.id
+    if get_solde(auteur_id) < montant or montant <= 0:
+        await ctx.send("❌ Solde insuffisant ou montant invalide.")
+        return
+    update_solde(auteur_id, -montant)
+    update_solde(membre.id, montant)
+    await ctx.send(f"💸 Tu as donné {montant} jetons à {membre.display_name}.")
+
+@bot.command()
+async def retirer(ctx, montant: int):
+    auteur_id = ctx.author.id
+    if get_solde(auteur_id) < montant or montant <= 0:
+        await ctx.send("❌ Solde insuffisant ou montant invalide.")
+        return
+    update_solde(auteur_id, -montant)
+    await ctx.send(f"🪙 Tu as retiré {montant} jetons de ton compte.")
 
 
 @bot.command()
