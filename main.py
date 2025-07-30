@@ -62,30 +62,27 @@ APPRENTI = 1352013998572306462
 STAGIAIRE = 1352013993539014726
 ABSENT_ROLE_ID = 1371559532378980352  # ID du rôle "Absent"
 ABSENT_ROLE_ID = 1371559532378980352
-
-# =====================================================================
-# EVENEMENT DE DEMARRAGE
-# =====================================================================
-@bot.event
-async def on_ready():
-    print(f"Connecté en tant que {bot.user}")
-    bot.loop.create_task(update_effectif())
-
-# =====================================================================
-# COMMANDE SIMPLE EXEMPLE
-# =====================================================================
-@bot.command()
-async def bonjour(ctx):
-    await ctx.send(f"Bonjour {ctx.author.mention} !")
-
 # =====================================================================
 # FONCTION DE MISE À JOUR DES EFFECTIFS
 # =====================================================================
-async def update_effectif():
-    await bot.wait_until_ready()
-    channel = bot.get_channel(CHANNEL_ID)
+@bot.event
+async def on_ready():
+    print(f"✅ Connecté en tant que {bot.user}")
+    update_effectif_loop.start()
+
+@tasks.loop(seconds=60)
+async def update_effectif_loop():
+    await update_effectif_once()
+
+@bot.command()
+async def effectif(ctx):
+    await update_effectif_once(force_channel=ctx.channel)
+    await ctx.send("📊 Mise à jour de l'effectif envoyée.")
+
+async def update_effectif_once(force_channel=None):
+    channel = force_channel or bot.get_channel(CHANNEL_ID)
     if not channel:
-        print("Salon introuvable.")
+        print("❌ Salon introuvable.")
         return
 
     def get_departement(member):
@@ -119,97 +116,30 @@ async def update_effectif():
         bloc += "━" * 75 + "\n"
         return bloc
 
-    while True:
-        try:
-            guild = channel.guild
-            message = ""
+    try:
+        guild = channel.guild
+        message = ""
+        message += await generer_bloc(guild, DIRECTION)
+        message += await generer_bloc(guild, ADJOINT_DEPUTE)
+        message += await generer_bloc(guild, ADJOINT_DIRECTION)
+        for role_id in [EMPLOYE_SENIOR, EMPLOYE_CONFIRME, EMPLOYE, EMPLOYE_JUNIOR]:
+            message += await generer_bloc(guild, role_id)
+        message += await generer_bloc(guild, APPRENTI, avec_departement=False)
+        message += await generer_bloc(guild, STAGIAIRE, avec_departement=False)
 
-            def get_departement(member):
-                for _, role_id in ROLES.items():
-                    role = guild.get_role(role_id)
-                    if role and role in member.roles:
-                        return role
-                return None
+        personnel_role = guild.get_role(1158798630254280855)
+        count = len(personnel_role.members) if personnel_role else 0
+        message += f"** Total de <@&{personnel_role.id}> : {count}**\n"
 
-           
+        async for msg in channel.history(limit=1):
+            if msg.author == bot.user:
+                await msg.edit(content=message)
+                break
+        else:
+            await channel.send(message)
 
-            async def generer_bloc(guild, role_id, avec_departement=True):
-                bloc = f"### <@&{role_id}>\n"  # Grand titre avec la mention du rôle
-                role = guild.get_role(role_id)
-                if not role:
-                    return f"Rôle introuvable : {role_id}\n"
-    
-                total = 0
-                for member in role.members:
-                    ligne = f"- {member.mention}"
-        
-                    if avec_departement:
-                        departement = get_departement(member)
-                        if departement:
-                            ligne += f" <@&{departement.id}>"
-        
-                    # Ajouter le rôle "Absent" s'il est présent
-                    absent_role = guild.get_role(ABSENT_ROLE_ID)
-                    if absent_role and absent_role in member.roles:
-                        ligne += f" <@&{ABSENT_ROLE_ID}>"
-        
-                    bloc += ligne + "\n"
-                    total += 1
-
-                if total == 0:
-                    bloc += "N/A\n"
-
-                bloc += "━" * 75 + "\n"
-                return bloc
-
-
-            # Bloc Direction
-            message += await generer_bloc(guild, DIRECTION)
-            # Bloc Adjoint du Député
-            message += await generer_bloc(guild, ADJOINT_DEPUTE)
-            # Bloc Adjoint de direction
-    
-            message += await generer_bloc(guild, ADJOINT_DIRECTION)
-            # Employés
-            employes = [EMPLOYE_SENIOR, EMPLOYE_CONFIRME, EMPLOYE, EMPLOYE_JUNIOR]
-            for role_id in employes:
-            for role_id in [EMPLOYE_SENIOR, EMPLOYE_CONFIRME, EMPLOYE, EMPLOYE_JUNIOR]:
-                message += await generer_bloc(guild, role_id)
-
-            # Apprenti (pas de département)
-            message += await generer_bloc(guild, APPRENTI, avec_departement=False)
-
-            # Stagiaire (pas de département)
-            message += await generer_bloc(guild, STAGIAIRE, avec_departement=False)
-
-       
-            personnel_role = channel.guild.get_role(1158798630254280855)
-            personnel_count = len(personnel_role.members) if personnel_role else 0
-            message += f"** Total de <@&{personnel_role.id}> : {personnel_count}**\n"
-    
-           # Vérifier si un message existe déjà dans le salon
-            
-            count = len(personnel_role.members) if personnel_role else 0
-            message += f"** Total de <@&{personnel_role.id}> : {count}**\n"
-
-            async for msg in channel.history(limit=1):
-                if msg.author == bot.user:  # Vérifier si c'est un message du bot
-                    await msg.edit(content=message)  # Mettre à jour le message
-                    print("Message mis à jour.")
-                if msg.author == bot.user:
-                    await msg.edit(content=message)
-                    break
-            else:
-                # Si aucun message du bot n'existe, en créer un nouveau
-                await channel.send(message)
-                print("Nouveau message envoyé.")
-
-        except Exception as e:
-            print(f"Erreur lors de la mise à jour du message : {str(e)}")
-            print(f"Erreur de mise à jour : {e}")
-
-        # Attendre 60 secondes avant la prochaine mise à jour
-        await asyncio.sleep(60)
+    except Exception as e:
+        print(f"❌ Erreur de mise à jour : {e}")
 # ----------------------------------------------------------- CASINO -------------------------------------------------------------
 
 bot = commands.Bot(command_prefix="!")
