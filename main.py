@@ -1,18 +1,13 @@
 import os
-import asyncio
-import json
-from dotenv import load_dotenv
 import random
-import discord
-from discord.ext import commands
-from keep_alive import keep_alive
+import asyncio
+import sqlite3
 from datetime import datetime, timedelta
-from collections import defaultdict
 
-from dotenv import load_dotenv
 import discord
-from discord.ext import commands
-from keep_alive import keep_alive
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
+
 
 # Charger les variables d’environnement
 load_dotenv()
