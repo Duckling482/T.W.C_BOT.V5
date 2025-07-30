@@ -6,7 +6,6 @@ import random
 import discord
 from discord.ext import commands
 from keep_alive import keep_alive
-import sqlite3
 from datetime import datetime, timedelta
 from collections import defaultdict
 
